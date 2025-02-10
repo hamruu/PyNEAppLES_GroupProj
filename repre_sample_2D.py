@@ -6,52 +6,60 @@ Program for the selection of the most representative molecular geometries for sp
 @author: Stepan Srsen
 """
 
-import sys
-import numpy as np
-import random
-import math
-import time
-import os
-from joblib import Parallel, delayed, cpu_count
-from argparse import ArgumentParser
+import sys #allows access to system-specific parameters and functions
+import numpy as np #numerical opperations and arrays
+import random #random number generations / random selections
+import math #mathematical functions
+import time #tracking execution times / delays
+import os #interacts with the oparating system, file and directory operations
+from joblib import Parallel, delayed, cpu_count #imported tools for parallel processing
+from argparse import ArgumentParser #creating a command-line interface (interacting with a computer program by inputting lines of text - command lines)
 import datetime
-from scipy.stats import gaussian_kde
-from scipy.spatial.distance import pdist, squareform
-import matplotlib as mpl
+from scipy.stats import gaussian_kde #Kernel Density Estimation (KDE), a non-parametric way to estimate a PDF
+from scipy.spatial.distance import pdist, squareform #computing pairwise distances and converting them into square matrices
+import matplotlib as mpl 
 # mpl.use('agg') # noninteractive backend when there are problems with the $DISPLAY
 import matplotlib.pyplot as plt
 
 def read_cmd():
-    """Function for command line parsing."""
+    """Function for command line parsing."""   #command line parsing (string analysis)
 #    parser = calc_spectrum.read_cmd(parse=False)
-    parser = ArgumentParser(description='Spectrum reduction.')
-    parser.add_argument('infile', help='Input file.')
+    parser = ArgumentParser(description='Spectrum reduction.')   #creates an ArgumentParser object with a description of the programme
+    parser.add_argument('infile', help='Input file.')   #defines a positional argument for the input file
     parser.add_argument('-n', '--nsamples', type=int, default=1,
-                        help='Number of samples.')
+                        help='Number of samples.')   #defines an optional argument for the number of samples
     parser.add_argument('-N', '--nstates', type=int, default=1,
-                        help='Number of excited states (ground state not included).')
+                        help='Number of excited states (ground state not included).')   #efines an optional argument for the number of excited states (not counting the ground state)
     parser.add_argument('-v', '--verbose', action='store_true',
-                        help='Activate verbose mode.')
+                        help='Activate verbose mode.')   #defines a flag to enable 'verbose' output
     parser.add_argument('-j', '--ncores', type=int, default=1,
                         help='Number of cores for parallel execution of computatinally intensive subtasks:'
-                        + ' cross-validation bandwidth setting, error bars, geometry reduction.')
-    
+                        + ' cross-validation bandwidth setting, error bars, geometry reduction.')   #defines an optional argument for the number of cores used in parallel processing
+ 
     parser.add_argument('-S', '--subset', type=int, default=0,
-                        help='Number of representative molecules.')
+                        help='Number of representative molecules.')   #defines an optional argument for the number of representative molecules (subset size)
     parser.add_argument('-c', '--cycles', type=int, default=1000,
-                        help='Number of cycles for geometries reduction.')
+                        help='Number of cycles for geometries reduction.')   #defines an optional argument for the number of cycles in the geometry reduction (optimisation) process
     parser.add_argument('-J', '--njobs', dest='njobs', type=int, default=1,
-                        help='Number of reduction jobs.')
+                        help='Number of reduction jobs.')   #defines an optional argument for the number of independent reduction jobs
     parser.add_argument('-w', '--weighted', action='store_true',
-                        help='Weigh the distributions during optimization by spectroscopic importance ~E*tdm^2.')
+                        help='Weigh the distributions during optimization by spectroscopic importance ~E*tdm^2.')   #defines a flag to weigh distributions during optimization by spectroscopic importance (~E*tdm^2)
     parser.add_argument('--pdfcomp', choices=['KLdiv','JSdiv','KStest', 'kuiper', 'SAE', 'RSS', 'cSAE', 'cRSS'], default='KLdiv',
-                        help='Method for comparison of probability density functions.')
+                        help='Method for comparison of probability density functions.')   #defines an optional argument to choose the method for comparing probability density functions
     parser.add_argument('--intweights', action='store_true',
-                        help='Activate optimization of integer weights for individual geometries (instead of 0/1).')
-    
-    return parser.parse_args()
+                        help='Activate optimization of integer weights for individual geometries (instead of 0/1).')   #defines a flag (T/F value, this case 0/1) to optimize integer weights (instead of binary 0/1 selection) for each geometry
 
-class PDFDiv:
+    return parser.parse_args()   #parses the command line (breaks into components) and returns the options
+
+#-------------will continue------------------------------------------------------------------
+
+
+
+
+
+
+
+class PDFDiv:   ### PDF divergence methods
     """Class with different methods to calculate the divergence of two probability density functions."""
 
     @staticmethod
