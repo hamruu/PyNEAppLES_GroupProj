@@ -283,20 +283,20 @@ class GeomReduction:
                 self.kernel = []
         
         # pdf = np.zeros((self.nstates, self.n_points**2))
-        if self.dim1:
+        if self.dim1:   #initialise an array for the PDF values (different shape for 1D vs. 2D)
             pdf = np.zeros((self.n_points))
         else:
             pdf = np.zeros((self.n_points**2))
             
-        for state in range(self.nstates):
-            exc = self.exc[samples,state]
-            trans = self.trans[samples,state]
+        for state in range(self.nstates):       #loops over each excited state
+            exc = self.exc[samples,state]       #extracting excitation energies
+            trans = self.trans[samples,state]   #extracting corresponding dipole data
             if self.dim1:
-                values = exc[None,:]
+                values = exc[None,:]   #for 1D
             else:
-                values = np.vstack([exc, trans]) # TODO: index values directly
+                values = np.vstack([exc, trans]) # TODO: index values directly   ####for 2D, stacks excitation energies and dipole values
             # h = bandwidth
-            norm = self.wnorms[state]
+            norm = self.wnorms[state]   #sets normalisation value for the state
             weights = None
             if self.weighted:
                 if sweights is not None:
@@ -307,14 +307,14 @@ class GeomReduction:
                     weights = self.weights[samples,state]
             elif sweights is not None:
                 weights = sweights
-            if gen_grid and self.subset == 1:
+            if gen_grid and self.subset == 1:   #creates a Gaussian KDE object using the chosen bandwidth method and optional weights
                 kernel = gaussian_kde(values, bw_method=h, weights=weights)
                 # save the kernels so they can be reused later for self.subset=1 as they cannot be initialized in a regular way 
-                self.kernel.append(kernel)
+                self.kernel.append(kernel)   #saves the kernel so that it can be reused later (necessary when subset==1)
             elif self.subset == 1:
                 # reuse the saved kernel when self.subset=1 as they cannot be initialized in a regular way 
-                kernel = self.kernel[state]
-                kernel.dataset = values
+                kernel = self.kernel[state]   #reuses the saved kernel
+                kernel.dataset = values   #updates the data in the kernel
                 # kernel.weights = weights[:, None]
                 # print(kernel.dataset)
                 # norm *= self.nsamples
@@ -322,52 +322,52 @@ class GeomReduction:
                 kernel = gaussian_kde(values, bw_method=h, weights=weights)
                 
             # pdf[state] = kernel(self.grid[state])*self.norm[state]*norm #*self.gweights
-            pdf += kernel(self.grid)*self.norm*norm#*self.wnorms[state] #*self.gweights
+            pdf += kernel(self.grid)*self.norm*norm#*self.wnorms[state] #*self.gweights           ###evaluates the kernel on the grid and accumulates the contribution
             # print('pdf sum', np.sum(pdf), norm)
         
         return pdf
         
     def select_subset(self, randomly=True):
-        """Random selection of a subsample of a given size."""
+        """Random selection of a subsample of a given size."""   #returns the indices (and optionally initial integer weights) of the representative geometries
 
-        if randomly:
-            samples = np.array(random.sample(range(self.nsamples), self.subset))
+        if randomly:   
+            samples = np.array(random.sample(range(self.nsamples), self.subset))   #randomly selects 'subset' number of sample indices from the full set
         else:
-            if self.nstates > 1:
+            if self.nstates > 1:   #deterministic selection based on maximizing distances (only applicable for one state)
                 print('ERROR: intial subset generation with maximal distances is not supported for multiple states.')
                 return
-            exc = self.exc[:,0] # only for one state
+            exc = self.exc[:,0] # only for one state   ###considers only the excitation energies of the single state
             trans = self.trans[:,0]
             weights = self.weights[:,0]
-            exc = exc/np.average(exc, weights=weights)
+            exc = exc/np.average(exc, weights=weights)   #normalises the values by their weighted averages
             trans = trans/np.average(trans, weights=weights)
-            values = np.vstack([exc, trans]).T
-            dists = squareform(pdist(values))
-            samples = [np.argmax(np.sum(dists, axis=1))]
-            while len(samples) < self.subset:
+            values = np.vstack([exc, trans]).T   #stacks into 2D coordinates
+            dists = squareform(pdist(values))   #computes the pairwise distances between points
+            samples = [np.argmax(np.sum(dists, axis=1))]   #chooses the sample with the largest overall distance as the first representative
+            while len(samples) < self.subset:   #iteratively adds the sample which maximizes the minimal distance to the current subset
                 sample = np.argmax(np.min(dists[:,samples], axis=1))
                 samples.append(sample)
             samples = np.array(samples)
         
         if self.intweights and self.subset>1:
-            weights = int(self.nsamples/self.subset + 0.5)*np.ones(samples.shape, dtype=int)
+            weights = int(self.nsamples/self.subset + 0.5)*np.ones(samples.shape, dtype=int)   #for integer weights, initialises each with nsamples/subset (rounded)
         else:
             weights = None
         return samples, weights
     
     def swap_samples(self, samples, weights=None):
-        """Swap one datapoint between the representative subsample and the rest."""
+        """Swap one datapoint between the representative subsample and the rest."""   #The function makes a small change in the current solution by either swapping one sample or adjusting weights
 
-        index1 = random.randrange(len(samples))
-        change_weights = np.random.randint(5) # prob to change weights instead of swapping given by 1-1/change_weights
+        index1 = random.randrange(len(samples))   #randomly chooses an index within the current subsample
+        change_weights = np.random.randint(5) # prob to change weights instead of swapping given by 1-1/change_weights   ###decides randomly (with about a 1 in 5 chance) to change weights rather than swap
         # change_weights = 1
         if change_weights==0 or weights is None:
-            rest = list(set(range(self.nsamples)) - set(samples))
+            rest = list(set(range(self.nsamples)) - set(samples))   #computes the set of indices not in the current subsample
             index2 = random.randrange(len(rest))
-            samples[index1] = rest[index2]
+            samples[index1] = rest[index2]   #swaps the selected sample with a new one from the remaining set
             return samples, weights
-        index2 = random.randrange(len(samples))
-        while weights[index2]==1 or index1==index2:
+        index2 = random.randrange(len(samples))   #otherwise, adjusts the integer weights
+        while weights[index2]==1 or index1==index2:   #ensures a weight is not reduced below 1
             index1 = random.randrange(len(samples))
             index2 = random.randrange(len(samples))
         weights[index1] += 1
@@ -380,22 +380,22 @@ class GeomReduction:
         return samples, weights
 
     def SA(self, test=False, pi=0.9, pf=0.1, li=None, lf=None):
-        """Simulated annealing optimization for the selection of a subsample minimizing given divergence."""
+        """Simulated annealing optimization for the selection of a subsample minimizing given divergence."""   #Simulated Annealing is a probabilistic method that allows uphill moves (worse solutions) with a probability that decreases over time (temperature), helping to avoid local minima
 
-        if test:
+        if test:   #if in test mode, performs a short run to calibrate parameters
             subsamples = self.subsamples
             weights = self.sweights
             it = 1
             diffmax = 0
             diffmin = np.inf
         else:
-            subsamples, weights = self.select_subset()
+            subsamples, weights = self.select_subset()   #starts by selecting an initial subset
             subsamples_best = subsamples
             weights_best = weights
-            d_best = np.inf
+            d_best = np.inf   #initialises best divergence to infinity
             
-            nn = self.subset*(self.nsamples-self.subset)
-            if not li:
+            nn = self.subset*(self.nsamples-self.subset)   #computes the total number of possible swaps
+            if not li:   
                 itmin = 1
             else:
                 itmin = nn*li
@@ -407,26 +407,26 @@ class GeomReduction:
                 itc = 1
                 loops = itmin*self.cycles
             else:
-                itc = math.exp((math.log(itmax)-math.log(itmin))/self.cycles)
-                loops = int(itmin*(itc**(self.cycles)-1)/(itc-1)) # neglects rounding
+                itc = math.exp((math.log(itmax)-math.log(itmin))/self.cycles)   #adjusts the length of the Markov chain over cycles
+                loops = int(itmin*(itc**(self.cycles)-1)/(itc-1))   #neglects rounding
             it = itmin
             
             self.subsamples = np.copy(subsamples)
             if weights is not None:
                 self.sweights = np.copy(weights)
-            sa_test_start = time.time()
+            sa_test_start = time.time()   #runs a short test cycle to estimate the appropriate temperature range
             ti, tf = self.SA(test=True, pi=pi, pf=pf)
             sa_test_time = time.time() - sa_test_start
-            tc = math.exp((math.log(tf)-math.log(ti))/self.cycles)
-            temp = ti
+            tc = math.exp((math.log(tf)-math.log(ti))/self.cycles)   #calculates the temperature decay coefficient
+            temp = ti   #sets the initial temperature
 
-        intensity = self.get_PDF(samples=subsamples, sweights=weights)
-        d = self.calc_diff(self.origintensity, intensity)
+        intensity = self.get_PDF(samples=subsamples, sweights=weights)   #computes the PDF of the current subsample
+        d = self.calc_diff(self.origintensity, intensity)   #calculates the divergence (difference) between the original full-sample PDF and the subsample PDF
         # d = 0
         # for state in range(self.nstates):
         #     d += self.calc_diff(self.origintensity, intensity)*self.wnorms[state]
         
-        if not test:
+        if not test:   #estimates and prints the expected run time based on the test cycle
             m, s = divmod(int(round(sa_test_time*loops/self.cycles)), 60)
             h, m = divmod(m, 60)
             print('Ti', ti, 'Tf', tf)
@@ -438,15 +438,15 @@ class GeomReduction:
             print(toprint)
 #         sys.stdout.flush()
             
-        for _ in range(self.cycles):
+        for _ in range(self.cycles):   #begins the SA cycles 
             for _ in range(int(round(it))):
-                subsamples_i = np.copy(subsamples)
+                subsamples_i = np.copy(subsamples)   #creates a candidate solution by copying the current subsample
                 weights_i = None
                 if weights is not None:
                     weights_i = np.copy(weights)
-                subsamples_i, weights_i = self.swap_samples(subsamples_i, weights_i)
-                intensity = self.get_PDF(samples=subsamples_i, sweights=weights_i)
-                d_i = self.calc_diff(self.origintensity, intensity)
+                subsamples_i, weights_i = self.swap_samples(subsamples_i, weights_i)   #makes a small change (swap one sample or adjust weights)
+                intensity = self.get_PDF(samples=subsamples_i, sweights=weights_i)   #evaluates the PDF and computes its divergence
+                d_i = self.calc_diff(self.origintensity, intensity) 
                 # d_i = 0
                 # for state in range(self.nstates):
                 #     d_i += self.calc_diff(self.origintensity, intensity)*self.wnorms[state]
@@ -466,19 +466,19 @@ class GeomReduction:
                             weights_best = weights_i
                             d_best = d_i
                     else:
-                        prob = math.exp((d - d_i)/ temp)
-                if prob >= random.random():
+                        prob = math.exp((d - d_i)/ temp)   #accepts worse solutions with a probability that decreases with temperature
+                if prob >= random.random():   #decides whether to accept the candidate solution
                     subsamples = subsamples_i
                     weights = weights_i
                     d = d_i
-            if not test:
+            if not test:   #decreases the temperature and adjusts the chain length
                 temp *= tc
                 it *= itc
         if test:
             print('diffmax', diffmax, 'diffmin', diffmin, 'd', d)
-            return -diffmax/math.log(pi), -diffmin/math.log(pf)
+            return -diffmax/math.log(pi), -diffmin/math.log(pf)   #returns estimated initial and final temperatures
         
-        pdf = self.get_PDF(subsamples_best, sweights=weights_best)
+        pdf = self.get_PDF(subsamples_best, sweights=weights_best)   #evaluates the best candidate and prints the result
         print('PDF sum', np.sum(pdf))
         print('best d', d_best)
         self.subsamples = subsamples_best
@@ -509,7 +509,7 @@ class GeomReduction:
     #     return div
     
     def extensive_search(self, i):
-        """Optimization of the representative geometry using extensive search to minimize given divergence."""
+        """Optimization of the representative geometry using extensive search to minimize given divergence."""   #for a given sample index i, computes the divergence without modifying the subsample
 
         self.subsamples = [i]
         self.sweights = None
@@ -520,21 +520,21 @@ class GeomReduction:
         return div
 
     def reduce_geoms_worker(self, i, li=None, lf=None):
-        """Wrapper for SA opt. for the selection of a subsample minimizing given divergence."""
+        """Wrapper for SA opt. for the selection of a subsample minimizing given divergence."""   #run as a worker in parallel processing
 
-        name = self.get_name() + '.r' + str(self.subset)
-        os.chdir(name)
-        orig_stdout = sys.stdout
+        name = self.get_name() + '.r' + str(self.subset)   #creates a unique directory name for the results
+        os.chdir(name)   #changes directory into the result folder
+        orig_stdout = sys.stdout   #saves the original standard output
         with open('output_r'+str(self.subset)+'.txt', 'a') as f:
-           sys.stdout = f
-           div = self.SA(li=li, lf=lf)
+           sys.stdout = f   #redirects the output to a log file
+           div = self.SA(li=li, lf=lf)   #runs the simulated annealing optimisation
            #self.spectrum.writeout(i)
-           self.writegeoms('r'+str(self.subset)+'.'+str(i))
-        sys.stdout = orig_stdout   
-        os.chdir('..')
+           self.writegeoms('r'+str(self.subset)+'.'+str(i))   #saves the selected geometries
+        sys.stdout = orig_stdout   #restores the standard output
+        os.chdir('..')   #goes back to the parent directory
         return div, self.subsamples, self.sweights
 
-    #TODO: make random search work
+    #TODO: make random search work                                                                            
     #def random_geoms_worker(self, i):
     #    """Wrapper for representative sample opt. using random search to minimize given divergence."""
     #
@@ -550,8 +550,8 @@ class GeomReduction:
     #    os.chdir('..')
     #    return div, self.subsamples, self.sweights
     
-    def extensive_search_worker(self, i):
-        """Wrapper for representative geometry opt. using extensive search to minimize given divergence."""
+    def extensive_search_worker(self, i):   #extensive search worker is an alternative (exhaustive search) method
+        """Wrapper for representative geometry opt. using extensive search to minimize given divergence."""   
 
         name = self.get_name() + '.r' + str(self.subset)
         os.chdir(name)
@@ -566,7 +566,7 @@ class GeomReduction:
         return div, self.subsamples, self.sweights
 
     def process_results(self, divs, subsamples, sweights, suffix=''):
-        """Process and print results from representative sample optimization."""
+        """Process and print results from representative sample optimization."""    #selects the best solution (lowest divergence) and writes output files
 
         print('average divergence', np.average(divs))
         print('divergence std', np.std(divs))
@@ -579,13 +579,13 @@ class GeomReduction:
         intensity = self.get_PDF(self.subsamples, self.sweights)
         print('optimal PDF sum', np.sum(intensity))
         name = self.get_name()+'.r'+str(self.subset)+'.'+suffix+str(min_index)
-        np.savetxt(name+'.exc.txt', self.exc[self.subsamples])
+        np.savetxt(name+'.exc.txt', self.exc[self.subsamples])   #saves the excitation energies, transition dipole moments, and PDF data to text files
         np.savetxt(name+'.tdm.txt', self.trans[self.subsamples])
         np.savetxt(name+'.pdf.txt', np.vstack((self.grid, intensity)).T)
-        self.save_pdf(pdf=intensity, fname=name+'.pdf', markers=True)
+        self.save_pdf(pdf=intensity, fname=name+'.pdf', markers=True)   #saves a plot image of the PDF
 
     def reduce_geoms(self):
-        """Central function calling representative sample optimization based on user inputs."""
+        """Central function calling representative sample optimization based on user inputs."""    #calculates the full-sample PDF, saves initial data, and then runs optimization jobs in parallel
 
         self.origintensity = self.get_PDF(gen_grid=True)
         print('original PDF sum', np.sum(self.origintensity))
@@ -596,16 +596,16 @@ class GeomReduction:
         if self.subset == 1:
             # edit the saved kernels for self.subset=1 as they cannot be initialized in a regular way
             # maybe move to get_PDF?
-            for kernel in self.kernel:
+            for kernel in self.kernel:   #for the case of a single representative geometry, adjusts the saved kernels
                 kernel.set_bandwidth(bw_method=1)
                 kernel.n = 1
                 kernel._neff = 1
                 kernel._weights = np.ones((1))
 
-        name = self.get_name() + '.r' + str(self.subset)
+        name = self.get_name() + '.r' + str(self.subset)   #creates a directory for saving the reduction results
         os.mkdir(name)
         
-        with Parallel(n_jobs=self.ncores, verbose=1*int(self.verbose)) as parallel:
+        with Parallel(n_jobs=self.ncores, verbose=1*int(self.verbose)) as parallel:   #run the SA optimisation in parallel using the specified number of cores
             divs, subsamples, sweights = zip(*parallel(delayed(self.reduce_geoms_worker)(i) for i in range(self.njobs)))
         print('SA divergences:')
         self.process_results(divs, subsamples, sweights)
@@ -629,7 +629,7 @@ class GeomReduction:
         # print('Random divergences:')
         # self.process_results(divs, subsamples, sweights, suffix='rnd.')
         
-        if self.subset==1:
+        if self.subset==1:   #if only one representative geometry is requested, performs an exhaustive search over all samples
             with Parallel(n_jobs=self.ncores, verbose=1*int(self.verbose)) as parallel:
                 divs, subsamples, sweights = zip(*parallel(delayed(self.extensive_search_worker)(i) for i in range(self.nsamples)))
             min_index = np.argmin(divs)
@@ -637,21 +637,21 @@ class GeomReduction:
             self.process_results(divs, subsamples, sweights, suffix='ext.')
 
     def save_pdf(self, pdf, fname, markers=False, plot=False, ext='png', dpi=72):
-        """Saves PDF as an image."""
+        """Saves PDF as an image."""   #creates a plot of the PDF (and optionally overlays markers for selected geometries) and saves it to a file
 
         samples = self.subsamples
         if not plot:
-            plt.ioff()
+            plt.ioff()   #turns off interactive plotting
         plt.figure()
         plt.xlim([self.exc_min, self.exc_max])
         plt.xlabel('$\mathit{E}$/eV')
         if self.dim1:
-            if markers:
+            if markers:   #for 1D data, plots the PDF versus excitation energy
                 plt.plot(self.exc[samples].ravel(), np.zeros((len(self.exc[samples].ravel()))), 'k.', markersize=2)
             #    plt.plot(self.grid, self.origintensity)
             plt.plot(self.grid, pdf)
         else:
-            Z = np.reshape(pdf.T, (self.n_points,self.n_points))
+            Z = np.reshape(pdf.T, (self.n_points,self.n_points))   #for 2D data, reshapes the PDF to a grid and displays it as an image
             plt.imshow(np.rot90(Z), cmap=plt.cm.gist_earth_r, extent=[self.exc_min, self.exc_max, self.trans_min, self.trans_max], aspect='auto')
             if markers:
                 plt.plot(self.exc[samples].ravel(), self.trans[samples].ravel(), 'k.', markersize=2)
@@ -661,10 +661,10 @@ class GeomReduction:
         if plot:
             plt.show()
         else:
-            plt.ion()
+            plt.ion()   #re-enables interactive mode
 
     def writegeoms(self, index=None):
-        """Writes a file with indices of the selected representative geometries."""
+        """Writes a file with indices of the selected representative geometries."""   #the output file contains either one-based indices or indices with associated weights
 
         indexstr = ''
         if index is not None:
@@ -673,14 +673,14 @@ class GeomReduction:
         with open(outfile, "w") as f:
             for i in range(len(self.subsamples)):
                 if self.sweights is None:
-                    f.write('%s\n' % (self.subsamples[i]+1))
+                    f.write('%s\n' % (self.subsamples[i]+1))   #writes the sample index (adding 1 for one-based indexing)
                 else:
-                    f.write('%s %s\n' % (self.subsamples[i]+1, self.sweights[i]))
+                    f.write('%s %s\n' % (self.subsamples[i]+1, self.sweights[i]))   #writes the sample index and its corresponding integer weight
                 
-if __name__ == "__main__":
-    random.seed(0)
-    start_time = time.time()
-    options = read_cmd()
+if __name__ == "__main__":   #main programme entry point
+    random.seed(0)   #seed the random number generator for reproducibility
+    start_time = time.time()   #records the start time for the overall execution
+    options = read_cmd()   #parse command-line arguments
     if options.verbose:
         print("OPTIONS:")
         for option in vars(options):
@@ -689,9 +689,9 @@ if __name__ == "__main__":
         print("Number of CPUs on this machine:", cpu_count())
 
     geomReduction = GeomReduction(options.nsamples, options.nstates, options.subset, options.cycles, options.ncores,
-                                  options.njobs, options.weighted, options.pdfcomp, options.intweights, options.verbose)
-    geomReduction.read_data(options.infile)
-    geomReduction.reduce_geoms()
+                                  options.njobs, options.weighted, options.pdfcomp, options.intweights, options.verbose)   #creates an instance of GeomReduction with parameters from the command-line
+    geomReduction.read_data(options.infile)   #reads the input molecular data
+    geomReduction.reduce_geoms()   #performs the geometry reduction (optimisation) to select representative geometries
     
     #if options.verbose:
-    print('INFO: wall time', round(time.time()-start_time), 's')
+    print('INFO: wall time', round(time.time()-start_time), 's')   #prints the total wall time
