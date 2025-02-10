@@ -51,14 +51,6 @@ def read_cmd():
 
     return parser.parse_args()   #parses the command line (breaks into components) and returns the options
 
-#-------------will continue------------------------------------------------------------------
-
-
-
-
-
-
-
 class PDFDiv:   ### PDF divergence methods
     """Class with different methods to calculate the divergence of two probability density functions."""
 
@@ -68,50 +60,50 @@ class PDFDiv:   ### PDF divergence methods
 
         # https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Interpretations
         # maybe normalize both by pdf1 for exact but comparable results? currently done in get_PDF
-        if normalize or not normalized:
+        if normalize or not normalized:   #if normalisation is required or the data is not yet normalized, calculate the total weight
             norm1 = np.sum(pdf1)
             norm2 = np.sum(pdf2)
-        if normalize:
+        if normalize:   #normalisation of the PDFs if requested
             pdf1 /= norm1
             pdf2 /= norm2
             normalized = True
-        thr = 1e-15
+        thr = 1e-15   #tiny threshold to avoid division by zero
         if not normalized:
             thr *= norm1
-        indices = pdf1>thr
+        indices = pdf1>thr   #considering indices only where pdf1 is above the threshold
         # print(pdf1.shape)
         pdf1 = pdf1[indices]
         # print(pdf1.shape)
         pdf2 = pdf2[indices]
-        pdf1 = pdf1 + thr
-        pdf2 = pdf2 + thr
+        pdf1 = pdf1 + thr   #offset by the threshold to avoid taking logs of zero
+        pdf2 = pdf2 + thr   #offset by the threshold to avoid taking logs of zero
         
-        d = np.divide(pdf1,pdf2)
-        np.log(d, out=d)
-        np.multiply(d, pdf1, out=d)
+        d = np.divide(pdf1,pdf2)   #computing the ratio
+        np.log(d, out=d)   #computing the log of the ratio
+        np.multiply(d, pdf1, out=d)   #multiplying elements by pdf1
         d = np.sum(d)
         if not normalized:
-            d += -norm1 + norm2
+            d += -norm1 + norm2   #adjusting for the unnormalised case
     #    print(d)
         return d
 
     @staticmethod
     def JSdiv(pdf1, pdf2):
-        """Jensen–Shannon divergence."""
+        """Jensen–Shannon divergence."""   #symmetrised and smoothed version of the KL divergence
 
-        pdf3 = (pdf1 + pdf2) / 2
-        d = 0.5*PDFDiv.KLdiv(pdf1, pdf3) + 0.5*PDFDiv.KLdiv(pdf2, pdf3)
+        pdf3 = (pdf1 + pdf2) / 2   #average of the 2pdfs
+        d = 0.5*PDFDiv.KLdiv(pdf1, pdf3) + 0.5*PDFDiv.KLdiv(pdf2, pdf3)   #computing the divergence as the average of the KL divergence from each pdf to the average
     #    print(d)
         return d
     
     @staticmethod
     def KStest(pdf1, pdf2):
-        """Kolmogorov–Smirnov test."""
+        """Kolmogorov–Smirnov test."""   #computes the maximum difference between the cumulative distribution functions (CDFs)
 
         cdf1 = 0.0
         cdf2 = 0.0
         d = 0.0
-        for i in range(len(pdf1)):
+        for i in range(len(pdf1)):   #incrementally build the CDFs and track the maximum difference
             cdf1 += pdf1[i]
             cdf2 += pdf2[i]
             dact = abs(cdf1-cdf2)
@@ -121,13 +113,13 @@ class PDFDiv:   ### PDF divergence methods
     
     @staticmethod
     def kuiper(pdf1, pdf2):
-        """Kuiper test."""
+        """Kuiper test."""   #similar to the KS test but takes into account both the maximum positive and negative deviations
 
         cdf1 = 0.0
         cdf2 = 0.0
         dminus = 0.0
         dplus = 0.0
-        for i in range(len(pdf1)):
+        for i in range(len(pdf1)):   #computes cumulative sums and track the deviations
             cdf1 += pdf1[i]
             cdf2 += pdf2[i]
             dminusact = cdf1-cdf2
@@ -136,20 +128,20 @@ class PDFDiv:   ### PDF divergence methods
                 dminus = dminusact
             if dplusact > dplus:
                 dplus = dplusact
-        d = dplus+dminus
+        d = dplus+dminus   #the Kuiper statistic is the sum of the maximum deviations
         return d
     
     @staticmethod
     def SAE(pdf1, pdf2):
-        """Sum of absolute errors/differences."""
+        """Sum of absolute errors/differences."""   #computes the total absolute difference between the two PDFs
 
-        # proc ne suma ctvercu odchylek?
+        # proc ne suma ctvercu odchylek? ---> percent not sum of ??? deviations
         d = np.sum(np.abs(pdf1-pdf2))
         return d
     
     @staticmethod
     def RSS(pdf1, pdf2):
-        """Residual sum of squares."""
+        """Residual sum of squares."""   #computes the sum of the squared differences between the two PDFs
 
         d = np.sum(np.power(pdf1-pdf2, 2))
         return d
@@ -157,7 +149,7 @@ class PDFDiv:   ### PDF divergence methods
     @staticmethod
     def cSAE(pdf1, pdf2):
         """Sum of absolute errors/differences of CDFs corresponding to given PDFs."""
-
+        #computes the absolute differences between the cumulative distribution functions (CDFs) derived from the PDFs
         cdf1 = np.cumsum(pdf1)
         cdf2 = np.cumsum(pdf2)
         d = np.sum(np.abs(cdf1-cdf2))
@@ -165,7 +157,7 @@ class PDFDiv:   ### PDF divergence methods
     
     @staticmethod
     def cRSS(pdf1, pdf2):
-        """Residual sum of squares of CDFs corresponding to given PDFs."""
+        """Residual sum of squares of CDFs corresponding to given PDFs."""   #computes the squared differences between the CDFs corresponding to the PDF
 
         cdf1 = np.cumsum(pdf1)
         cdf2 = np.cumsum(pdf2)
@@ -180,114 +172,114 @@ class GeomReduction:
         # if nstates > 1:
         #     print("ERROR: implemented only for 1 state!")
         #     return False
-        self.nstates = nstates
-        self.exc = np.empty((nsamples, nstates))
-        self.trans = np.empty((nsamples, nstates, 3))
-        self.grid = None
-        self.subset = subset
-        self.cycles = cycles
-        self.ncores = ncores
-        self.njobs = njobs
-        self.verbose = verbose
-        self.subsamples = []
-        self.sweights = None
-        self.origintensity = None
-        self.weighted = weighted
-        self.calc_diff = getattr(PDFDiv, pdfcomp)
-        self.intweights = intweights
-        self.dim1 = dim1
-        self.pid = os.getpid()
+        self.nstates = nstates   #number of excited states
+        self.exc = np.empty((nsamples, nstates))   #array holding the excitation energies
+        self.trans = np.empty((nsamples, nstates, 3))   #array for 3D transition dipole moments
+        self.grid = None   #grid later created for evaluating PDFs
+        self.subset = subset   #number of representative molecules to select
+        self.cycles = cycles   #number of cycles for the simulated annealing process   ???
+        self.ncores = ncores   #number of CPU cores for parallel tasks
+        self.njobs = njobs   #number of independent reduction jobs
+        self.verbose = verbose   #verbosity flag
+        self.subsamples = []   #list to store indices of the selected representative subsample
+        self.sweights = None   #weights associated with each selected geometry
+        self.origintensity = None   #PDF of the full (original) data
+        self.weighted = weighted   #flag to use weighted PDFs
+        self.calc_diff = getattr(PDFDiv, pdfcomp)   #dynamically assign the divergence function based on the chosen method
+        self.intweights = intweights   #whether to optimize integer weights
+        self.dim1 = dim1   #Flag: if True, operate in one dimension only (excitation energy only)
+        self.pid = os.getpid()   #process ID, used for naming files and logging
             
     def read_data(self, infile):
         """Reads and parses input data from given input file."""
 
-        self.infile = infile
-        self.time = datetime.datetime.now()
+        self.infile = infile   #stores the filename
+        self.time = datetime.datetime.now()   #timestamp for filenaming
         with open(self.infile, "r") as f:
-            i = 0 #line
-            j = 0 #sample
-            k = -1 #state
+            i = 0 #line counter
+            j = 0 #sample counter
+            k = -1 #state counter (will be incremented to start at 0)
             for line in f:
-                if (i % 2 == 1):
-                    temp = line.split()
+                if (i % 2 == 1):   #odd-numbered lines (contain the transition dipole moment components)
+                    temp = line.split()   #splits the line into individual number strings
                     try:
                   # assigning transition dipole moments as a tuple
                         self.trans[j][k] = (float(temp[0]), float(temp[1]), float(temp[2]))
-                    except:
+                    except:   #error handling if the expected three numbers are not present
                         print("Error: Corrupted line "+str(i+1)+" in file "+self.infile)
                         print("I expected 3 columns of transition dipole moments, got:")
                         print(line)
                         sys.exit(1)
-                else:
-                    k += 1
+                else:   #even-numbered lines (contain excitation energy)
+                    k += 1   #move to the next state
                     if k == self.nstates:
-                        k = 0
-                        j += 1
+                        k = 0   #reset state counter once all states have been read
+                        j += 1   #move to the next sample
                     if j >= self.nsamples:
-                        if line.strip() != "":
+                        if line.strip() != "":   #check if there are extra transitions
                             print("Error: Number of transitions in the input file is bigger than the number of samples multiplied by the number of states.")
                             sys.exit(1)
                         break
                     try:
-                        self.exc[j][k] = float(line)
+                        self.exc[j][k] = float(line)   #convert the excitation energy to a float and store it
                     except:
                         print("Error when reading file "+self.infile+" on line: "+str(i+1))
                         print("I expected excitation energy, but got:" + line)
                         sys.exit(1)
                 i += 1
-            if (i != 2*self.nsamples*self.nstates):
+            if (i != 2*self.nsamples*self.nstates):   #verify that the file contained exactly the expected number of lines
                 print("Error: Number of transitions in the input file is smaller than the number of samples multiplied by the number of states.")
                 sys.exit(1)
 
-        self.trans = np.power(self.trans,2)
-        self.trans = np.sum(self.trans, axis=2)
-        self.weights = self.exc*self.trans
-        self.wnorms = np.sum(self.weights, axis=0)/np.sum(self.weights)
+        self.trans = np.power(self.trans,2)   #post-processing: square the transition dipole moments
+        self.trans = np.sum(self.trans, axis=2)   #sum the squared components to obtain a single scalar value per transition
+        self.weights = self.exc*self.trans   #calculate the weight for each transition as the product of excitation energy and the (summed) dipole moment
+        self.wnorms = np.sum(self.weights, axis=0)/np.sum(self.weights)   #normalise the weights per state
         
     def get_name(self):
         """Defines the basename for the generated files."""
 
-        bname = os.path.basename(self.infile)
-        name = bname.split(".")[0]
-        return 'absspec.' + name + '.n' + str(self.nsamples) + '.' + self.time.strftime('%Y-%m-%d_%H-%M-%S') # + '.' + str(self.pid)
+        bname = os.path.basename(self.infile)   #extracts the base name (without directory) of the input file
+        name = bname.split(".")[0]   #removes the file extension
+        return 'absspec.' + name + '.n' + str(self.nsamples) + '.' + self.time.strftime('%Y-%m-%d_%H-%M-%S') # + '.' + str(self.pid)   #creates a unique file name using the base name, number of samples, and a timestamp
 
         
     def get_PDF(self, samples=None, sweights=None, h='silverman', gen_grid=False):
-        """Calculates probability density function for given data on a grid."""
+        """Calculates probability density function for given data on a grid."""    #uses Gaussian kernel density estimation (KDE) to approximate the PDF from a set of samples
 
         # TODO: compare each state separately or create common grid and intensity?
         # TODO: weigh states by corresponding integral intensity, i.e. sum(ene*trans**2)?
         if samples is None:
-            samples = slice(None)
+            samples = slice(None)   #use all samples if none are specified
         
-        if gen_grid:
-            # generate the grid and store it
+        if gen_grid:   #gnerates the grid on which the PDF will be evaluated
+     
             # TODO: accept the params as argument, e.g. gen_grid=(100,1)
-            self.n_points = 100
-            n_sigma = 1
+            self.n_points = 100   #number of grid points per dimesnion
+            n_sigma = 1   #extends the grid by 1 standard deviation
             
             norm = 1
             if self.weighted:
-                if sweights is not None:
+                if sweights is not None:   #normalisation using the weighted sum of intensities
                     norm = np.sum(self.weights[samples]*sweights)/np.sum(sweights)
                 else:
                     norm = np.sum(self.weights[samples])/len(self.weights[samples])
-            h1 = np.amax(np.std(self.exc[samples], axis=0))
-            self.exc_min = self.exc[samples].min() - n_sigma*h1
-            self.exc_max = self.exc[samples].max() + n_sigma*h1
-            dX = (self.exc_max - self.exc_min)/(self.n_points-1)
-            if self.dim1:
+            h1 = np.amax(np.std(self.exc[samples], axis=0))   #estimates bandwidth based on the standard deviation of the excitation energies
+            self.exc_min = self.exc[samples].min() - n_sigma*h1   #defines grid limits for excitation energies (minimum)
+            self.exc_max = self.exc[samples].max() + n_sigma*h1   #defines grid limits for excitation energies (maximum)
+            dX = (self.exc_max - self.exc_min)/(self.n_points-1)  #grid spacing
+            if self.dim1:   #for 1D KDE, creates a linear grid
                 self.grid = np.linspace(self.exc_min, self.exc_max, self.n_points)
                 self.norm = dX/norm
-            else:
+            else:   #for 2D KDE, defines grid limits for the transition dipole moments
                 h2 = np.amax(np.std(self.trans[samples], axis=0))
                 self.trans_min = self.trans[samples].min() - n_sigma*h2
                 self.trans_max = self.trans[samples].max() + n_sigma*h2
-                X, Y = np.mgrid[self.exc_min : self.exc_max : self.n_points*1j, self.trans_min : self.trans_max : self.n_points*1j]
+                X, Y = np.mgrid[self.exc_min : self.exc_max : self.n_points*1j, self.trans_min : self.trans_max : self.n_points*1j]   #creates a mesh grid using mgrid
                 dY = (self.trans_max - self.trans_min)/(self.n_points-1)
-                self.norm = dX*dY/norm # sets the norm using full-sample PDF to obtain comparable values of divergences
-                self.grid = np.vstack([X.ravel(), Y.ravel()])
-            if self.subset == 1:
+                self.norm = dX*dY/norm   #sets the norm using full-sample PDF to obtain comparable values of divergences (combined normalisation factor)
+                self.grid = np.vstack([X.ravel(), Y.ravel()])   #flattens the grid into a 2-row array (each row represents one coordinate axis)
+            if self.subset == 1:   #for the special case of a single representative geometry, prepares a list to store kernels
                 self.kernel = []
         
         # pdf = np.zeros((self.nstates, self.n_points**2))
