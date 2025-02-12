@@ -2,6 +2,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
+#     "joblib",
 #     "numpy",
 #     "scikit-learn",
 # ]
