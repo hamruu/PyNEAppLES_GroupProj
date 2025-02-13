@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "joblib",
+#     "matplotlib",
+#     "numpy",
+#     "scipy",
+# ]
+# ///
 # -*- coding: utf-8 -*-
 """
 Program for the selection of the most representative molecular geometries for spectra modelling.
