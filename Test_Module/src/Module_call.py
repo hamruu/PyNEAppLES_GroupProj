@@ -8,7 +8,7 @@
 # ]
 # ///
 
-import repre_sample_2D as rstd
+import test_module.repre_sample_2D as rstd
 
 print(help(rstd.read_cmd()))
 
