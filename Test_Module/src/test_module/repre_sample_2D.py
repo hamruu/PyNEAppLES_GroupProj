@@ -198,7 +198,21 @@ class GeomReduction:
         self.intweights = intweights   #whether to optimize integer weights
         self.dim1 = dim1   #Flag: if True, operate in one dimension only (excitation energy only)
         self.pid = os.getpid()   #process ID, used for naming files and logging
-            
+
+    def read_data_direct(self, excitation_energies, transition_dipole_moments):
+
+        self.infile = "Test_Filename"   #stores the filename
+        self.time = datetime.datetime.now()
+
+        self.exc = excitation_energies
+        self.trans = (transition_dipole_moments[0], transition_dipole_moments[1], transition_dipole_moments[2])
+
+        self.trans = np.power(self.trans,2)   #post-processing: square the transition dipole moments
+        self.trans = np.sum(self.trans, axis=2)   #sum the squared components to obtain a single scalar value per transition
+        self.weights = self.exc*self.trans   #calculate the weight for each transition as the product of excitation energy and the (summed) dipole moment
+        self.wnorms = np.sum(self.weights, axis=0)/np.sum(self.weights)
+
+
     def read_data(self, infile):
         """Reads and parses input data from given input file."""
 
