@@ -202,15 +202,15 @@ class GeomReduction:
     def read_data_direct(self, excitation_energies, transition_dipole_moments_x, transition_dipole_moments_y, transition_dipole_moments_z):
 
         self.infile = "Test_Filename"   #stores the filename
-        self.time = datetime.datetime.now()
+        self.time = datetime.datetime.now() #records the current date and time
 
-        self.exc = excitation_energies
-        self.trans = np.stack((transition_dipole_moments_x, transition_dipole_moments_y, transition_dipole_moments_z), axis=-1)
+        self.exc = excitation_energies #assign the provided excitation energies directly to the instance variable
+        self.trans = np.stack((transition_dipole_moments_x, transition_dipole_moments_y, transition_dipole_moments_z), axis=-1)  #combine the separate transition dipole moment components (x, y, and z) into a single NumPy array. The np.stack() function creates a new dimension at the end, so that for each sample (and possibly state) you get a 3-element vector of [x, y, z]
 
         self.trans = np.power(self.trans,2)   #post-processing: square the transition dipole moments
         self.trans = np.sum(self.trans, axis=2)   #sum the squared components to obtain a single scalar value per transition
         self.weights = self.exc*self.trans   #calculate the weight for each transition as the product of excitation energy and the (summed) dipole moment
-        self.wnorms = np.sum(self.weights, axis=0)/np.sum(self.weights)
+        self.wnorms = np.sum(self.weights, axis=0)/np.sum(self.weights) #provides a normalization factor for each state, ensuring that the weights are comparable across states
 
 
     def read_data(self, infile):
