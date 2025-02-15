@@ -199,13 +199,13 @@ class GeomReduction:
         self.dim1 = dim1   #Flag: if True, operate in one dimension only (excitation energy only)
         self.pid = os.getpid()   #process ID, used for naming files and logging
 
-    def read_data_direct(self, excitation_energies, transition_dipole_moments):
+    def read_data_direct(self, excitation_energies, transition_dipole_moments_x, transition_dipole_moments_y, transition_dipole_moments_z):
 
         self.infile = "Test_Filename"   #stores the filename
         self.time = datetime.datetime.now()
 
         self.exc = excitation_energies
-        self.trans = (transition_dipole_moments[0], transition_dipole_moments[1], transition_dipole_moments[2])
+        self.trans = np.stack((transition_dipole_moments_x, transition_dipole_moments_y, transition_dipole_moments_z), axis=-1)
 
         self.trans = np.power(self.trans,2)   #post-processing: square the transition dipole moments
         self.trans = np.sum(self.trans, axis=2)   #sum the squared components to obtain a single scalar value per transition
