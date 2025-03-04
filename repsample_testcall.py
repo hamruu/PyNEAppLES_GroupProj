@@ -11,7 +11,7 @@ from tabnanny import verbose
 
 import numpy as np
 
-import rep_sampler_2d as rstd #import the GeomReduction class from the repre_sample_2D module within the test_module package
+from src.pyneapples import rep_sampler_2d as rstd #import the GeomReduction class from the repre_sample_2D module within the test_module package
 
 MYGEOM = rstd.GeomReduction(500, 3, 20, 100, 1, 1, weighted=False, pdfcomp = "KLdiv", intweights=0, verbose=False) #create an instance of GeomReduction with specified parameters: 500 samples, 3 states, 20 representative molecules, 100 cycles, 1 core, 1 job, without weighting, using KL divergence for PDF comparison, no integer weights, and verbose off
 
