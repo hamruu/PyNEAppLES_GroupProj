@@ -1,5 +1,5 @@
 [project]
-name = "PyNEAppLES_Call"
+name = "pyneapples"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -10,10 +10,11 @@ requires-python = ">=3.13"
 dependencies = ['numpy',
 		'matplotlib',
 		'scipy',
-		'joblib']
+		'joblib',
+		'pytest']
 
 [project.scripts]
-test-module = "test_module:main"
+rep_sampler_2D = "rep_sampler_2D:main"
 
 [build-system]
 requires = ["hatchling"]
