@@ -26,7 +26,7 @@ def test_reduction_count(geom_reduction_instance):
     gr.reduce_geoms()  
     reduced = gr.subsamples
     expected_count = 20
-    assert len(reduced) == expected_count, f"Expected {expected_count} reduced geometries, got {len(reduced)}"
+    assert len(reduced) == expected_count, f"Expected {expected_count} reduced geometries, got {len(reduced)} "
 
 def test_transition_dipole_components_range(geom_reduction_instance):
     gr = geom_reduction_instance
