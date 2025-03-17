@@ -42,3 +42,6 @@ jobs:
 
       - name: Install package
         run: uv pip install --system "pyneapples[dev] @ ."
+
+      - name: Test package
+        run: pytest

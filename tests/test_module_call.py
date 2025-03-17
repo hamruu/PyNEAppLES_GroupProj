@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from src.pyneapples.rep_sampler_2d import GeomReduction
+from pyneapples.rep_sampler_2d import GeomReduction
 
 @pytest.fixture
 def geom_reduction_instance():
