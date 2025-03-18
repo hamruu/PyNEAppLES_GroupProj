@@ -1,7 +1,10 @@
 import os
 import numpy as np
 import pytest
+<<<<<<< HEAD
 import matplotlib.pyplot as plt
+=======
+>>>>>>> f6b561fa84915d7902ec89e5e5ffda5e110924b7
 from pyneapples.rep_sampler_2d import GeomReduction
 
 @pytest.fixture
