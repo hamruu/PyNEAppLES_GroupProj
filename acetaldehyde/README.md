@@ -6,7 +6,7 @@ This folder contains all the necessary data to reproduce an exemplar usage of th
 
 ### `optfreq_mp2_vtz.out`
 - Output file from an ORCA 5 optimization frequency calculation of acetaldehyde.
-- This file was inputted into the **Harmonwig** program to generate a Wigner sample of geometries.
+- This file was inputted into the [**Harmonwig**](https://github.com/ispg-group/harmonwig) program to generate a Wigner sample of geometries.
 
 ### `harmonix_samples.xyz`
 - Contains 2000 Wigner-sampled acetaldehyde geometries.
