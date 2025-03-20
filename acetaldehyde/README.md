@@ -16,13 +16,9 @@ This folder contains all the necessary data to reproduce an exemplar usage of th
 - A `.json` file containing oscillator strengths and excitation energies for each geometry.
 - Extracted from **AtmoSpec**.
 
-### `repsample_acetylcall.py`
-- Script used to select subsets of representative geometries from the `acetaldehyde_course.json` data.
-- Allows for varying subset sizes and selection considering either 3 states or 1 state.
-
 ### `subsamples/subsamples_1state`
 - Directory containing `.xyz` files of subset geometries.
-- These geometries were prepared using the **PyNEAppLES** module and are ready for input back into **AtmoSpec**.
+- These geometries were prepared using the **PyNEAppLES** module in `repsample_acetylcall.py` and are ready for input back into **AtmoSpec**.
 
 ### `Results_1state` and `Results_3states`
 - Contain `.tsv` files with the resultant photoabsorption cross-sections.
