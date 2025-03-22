@@ -212,6 +212,19 @@ class GeomReduction:
         self.weights = self.exc*self.trans   #calculate the weight for each transition as the product of excitation energy and the (summed) dipole moment
         self.wnorms = np.sum(self.weights, axis=0)/np.sum(self.weights) #provides a normalization factor for each state, ensuring that the weights are comparable across states
 
+    def read_data_direct_osc(self, excitation_energies, oscillator_stregths):
+
+        evs_in_au = 27.211396 # Conversion factor from electronvolts to atomic units
+
+        self.infile = "Test_Filename"   #stores the filename
+        self.exc = excitation_energies # Assign excitation energies in eV units
+        self.time = datetime.datetime.now() #records the current date and time
+
+        self.trans = abs((3*oscillator_stregths)/(2*(self.exc/evs_in_au)))  # Calculate transition dipole moment scaler value (as above) using energy in a.u.
+
+        self.weights = self.exc*self.trans   #calculate the weight for each transition as the product of excitation energy and the (summed) dipole moment
+        self.wnorms = np.sum(self.weights, axis=0)/np.sum(self.weights) #provides a normalization factor for each state, ensuring that the weights are comparable across states
+
 
     def read_data(self, infile):
         """Reads and parses input data from given input file."""
