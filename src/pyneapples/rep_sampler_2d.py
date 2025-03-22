@@ -214,7 +214,7 @@ class GeomReduction:
 
     def read_data_direct_osc(self, excitation_energies, oscillator_stregths):
 
-        evs_in_au = 27.211396 # Define the converion factor from electronvolts to atomic units
+        evs_in_au = 27.211396 # Conversion factor from electronvolts to atomic units
 
         self.infile = "Test_Filename"   #stores the filename
         self.exc = excitation_energies # Assign excitation energies in eV units
