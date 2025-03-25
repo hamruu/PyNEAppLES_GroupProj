@@ -32,9 +32,15 @@ oscillator_strengths_array = np.array(oscillator_strengths)
 excitation_energies_cm_array = np.array(excitation_energies_cm)
 excitation_energies_ev_array = excitation_energies_cm_array * 0.0001239841984
 
-MYGEOM = rstd.GeomReduction(2000, 3, 5, 1000, 8, 16, weighted=True, pdfcomp = "KLdiv", intweights=False, verbose=False, dim1=False) #create an instance of GeomReduction with specified parameters: 500 samples, 3 states, 20 representative molecules, 100 cycles, 1 core, 1 job, without weighting, using KL divergence for PDF comparison, no integer weights, and verbose off
+subset_n_count = 10
+
+MYGEOM = rstd.GeomReduction(2000, 3, subset_n_count, 1000, 8, 16, weighted=True, pdfcomp = "KLdiv", intweights=False, verbose=False, dim1=False) #create an instance of GeomReduction with specified parameters: 500 samples, 3 states, 20 representative molecules, 100 cycles, 1 core, 1 job, without weighting, using KL divergence for PDF comparison, no integer weights, and verbose off
 
 np.random.seed(42) #set the seed for reproducibility
 
 MYGEOM.read_data_direct_osc(excitation_energies_ev_array, oscillator_strengths_array) #directly feed the generated data into the GeomReduction instance
 MYGEOM.reduce_geoms() #start the geometry reduction process to select representative geometries
+
+input_filename = "acetaldehyde/harmonic_samples.xyz"
+output_filename = f"acetaldehyde/reduced_samples_{subset_n_count}.xyz"
+MYGEOM.select_geoms(input_filename, output_filename, 7)
