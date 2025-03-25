@@ -35,6 +35,8 @@ Essentially, an instance of the class `GeomReduction` is created, specifying:
 
 The data is then read into the instance, and `reduce_geoms` is called. The data can be read in numerous ways, as seen in `repsample_testcall.py` and `repsample_acetylcall.py`.
 
+For an example workflow with the AtmoSpec programme, the `README.md` in `acetaldehyde` contains a full breakdown.
+
 ## References
 
 [1] Š. Sršeň and P. Slavíček, *J. Chem. Theory Comput.*, 2021, **17**, 6395–6404, DOI: [10.1021/acs.jctc.1c00749](https://doi.org/10.1021/acs.jctc.1c00749)
