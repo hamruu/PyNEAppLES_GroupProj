@@ -31,7 +31,7 @@ This folder contains all the necessary data to reproduce an exemplar usage of th
 ## Workflow Overview
 
 1. **Geometry Optimization:** Start with the `optfreq_mp2_vtz.out` output file from ORCA 5.
-2. **Wigner Sampling:** Use the **Harmonwig** program to create a Wigner sample (`harmonix_samples.xyz`).
+2. **Wigner Sampling:** Use the **Harmonwig** program to create a Wigner sample (`harmonic_samples.xyz`).
 3. **Spectral Analysis:** Input Wigner-sampled geometries into **AtmoSpec** to generate oscillator strength data (`acetaldehyde_course.json`).
 4. **Subset Selection:** Run `repsample_acetylcall.py` to select representative subsets of geometries, generating new, pruned, .xyz AtmoSpec input files.
 5. **Cross-Section Calculation:** Analyze the subsets using **AtmoSpec** at both EOM-CCSD and TDA/TDDFT theory levels, saving results into `.tsv` files.
