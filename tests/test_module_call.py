@@ -69,6 +69,7 @@ def test_reduce_geoms(monkeypatch):
     monkeypatch.setattr(plt, "savefig", lambda *args, **kwargs: None)
     gr.reduce_geoms()
     assert len(gr.subsamples) == subset, f"Expected {subset} reduced geometries, got {len(gr.subsamples)}."
+<<<<<<< HEAD
 
 def test_read_data_direct_osc():
     gr = GeomReduction(2, 1, subset=1, cycles=1, ncores=1, njobs=1,
@@ -86,3 +87,5 @@ def test_read_data_direct_osc():
     np.testing.assert_allclose(gr.wnorms, expected_wnorms, err_msg="Normalized weights do not match")
     from datetime import datetime
     assert isinstance(gr.time, datetime), "gr.time is not a datetime instance"
+=======
+>>>>>>> a6df473fa19aa2cf9d00154b5f5d6f40e351ef1e
