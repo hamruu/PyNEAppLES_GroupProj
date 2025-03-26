@@ -69,3 +69,20 @@ def test_reduce_geoms(monkeypatch):
     monkeypatch.setattr(plt, "savefig", lambda *args, **kwargs: None)
     gr.reduce_geoms()
     assert len(gr.subsamples) == subset, f"Expected {subset} reduced geometries, got {len(gr.subsamples)}."
+
+def test_read_data_direct_osc():
+    gr = GeomReduction(2, 1, subset=1, cycles=1, ncores=1, njobs=1,
+                       weighted=False, pdfcomp="KLdiv", intweights=0, verbose=False)
+    excitation = np.array([2.0, 4.0])
+    osc_strengths = np.array([0.1, 0.2])
+    gr.read_data_direct_osc(excitation, osc_strengths)
+    expected_trans = abs((3 * osc_strengths) / (2 * (excitation / 27.211396)))
+    expected_weights = excitation * expected_trans
+    expected_wnorms = np.sum(expected_weights, axis=0) / np.sum(expected_weights)
+    assert gr.infile == "Test_Filename"
+    np.testing.assert_allclose(gr.exc, excitation, err_msg="Excitation energies do not match")
+    np.testing.assert_allclose(gr.trans, expected_trans, err_msg="Transition dipole values do not match")
+    np.testing.assert_allclose(gr.weights, expected_weights, err_msg="Weights do not match")
+    np.testing.assert_allclose(gr.wnorms, expected_wnorms, err_msg="Normalized weights do not match")
+    from datetime import datetime
+    assert isinstance(gr.time, datetime), "gr.time is not a datetime instance"
