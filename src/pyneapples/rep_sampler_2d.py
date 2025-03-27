@@ -712,7 +712,36 @@ class GeomReduction:
                     f.write('%s\n' % (self.subsamples[i]+1))   #writes the sample index (adding 1 for one-based indexing)
                 else:
                     f.write('%s %s\n' % (self.subsamples[i]+1, self.sweights[i]))   #writes the sample index and its corresponding integer weight
-                
+
+    def select_geoms(self, input_file, output_file, atom_count):
+        """
+        Reads the input file and writes to output_file, inserting an extra blank line
+        immediately before any line beginning with "Properties".
+
+        Parameters:
+          input_file (str): The original file (e.g. "full_geometries.xyz")
+          output_file (str): The output file with blank lines inserted (e.g. "formatted_geometries.xyz")
+          atom_count (str or int): The number of atoms in the target molecule.
+        """
+        with open(input_file, "r") as fin:
+            lines = fin.readlines()
+
+        with open(output_file, "w") as fout:
+            geom_count = 1
+            write_block = False
+
+            for line in lines:
+                # If the line begins with the atom count this is a new geometry.
+                if line.startswith(str(atom_count)):
+                    if geom_count in self.subsamples:
+                        write_block = True
+                    else:
+                        write_block = False
+                    geom_count += 1
+
+                if write_block:
+                    fout.write(line)
+
 if __name__ == "__main__":   #main programme entry point
     random.seed(0)   #seed the random number generator for reproducibility
     start_time = time.time()   #records the start time for the overall execution
